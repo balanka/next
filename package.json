@@ -8,6 +8,7 @@
     "license": "MIT",
     "private": false,
     "scripts": {
+        "precommit": "./node_modules/.bin/lint-staged && yarn prettier",
         "serve:app": "./node_modules/.bin/webpack serve --config src/app/webpack.config.js --progress",
         "prettier": "./node_modules/.bin/prettier --write ."
     },
@@ -43,13 +44,12 @@
     },
     "husky": {
         "hooks": {
-            "pre-commit": "lint-staged"
+            "pre-commit": "yarn precommit"
         }
     },
     "lint-staged": {
         "*.{js,ts,tsx}": [
-            "./node_modules/.bin/eslint --fix",
-            "./node_modules/.bin/prettier --write ."
+            "./node_modules/.bin/eslint --fix"
         ]
     },
     "dependencies": {
