@@ -1,5 +1,5 @@
-import React, { ReactElement } from 'react';
-import Props from './props';
+import React, { ReactElement } from "react";
+import Props from "./props";
 
 export default function Test({ name, age }: Props): ReactElement {
     return (

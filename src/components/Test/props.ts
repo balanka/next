@@ -3,4 +3,4 @@ type Props = {
     age: number;
 };
 
-export default Props
+export default Props;
