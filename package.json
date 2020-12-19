@@ -2,15 +2,14 @@
     "name": "next",
     "version": "0.0.1",
     "description": "the next version of material-table-core",
-    "main": "index.ts",
     "repository": "https://github.com/material-table-core/next.git",
     "author": "material-table-core contributors",
     "license": "MIT",
     "private": false,
     "scripts": {
-        "precommit": "./node_modules/.bin/lint-staged && yarn prettier",
+        "precommit": "./node_modules/.bin/eslint --fix && yarn prettier",
         "serve:app": "./node_modules/.bin/webpack serve --config src/app/webpack.config.js --progress",
-        "prettier": "./node_modules/.bin/prettier --write ."
+        "prettier": "./node_modules/.bin/prettier --write ./src"
     },
     "devDependencies": {
         "@babel/core": "^7.12.10",
@@ -23,12 +22,14 @@
         "@typescript-eslint/parser": "^4.10.0",
         "babel-loader": "^8.2.2",
         "esbuild": "^0.8.24",
-        "eslint": "^7.15.0",
+        "eslint": "^7.16.0",
+        "eslint-config-airbnb": "^18.2.1",
         "eslint-config-prettier": "^7.0.0",
+        "eslint-plugin-import": "^2.22.1",
         "eslint-plugin-prettier": "^3.3.0",
+        "eslint-plugin-react": "^7.21.5",
         "html-webpack-plugin": "^4.5.0",
         "husky": "^4.3.6",
-        "lint-staged": "^10.5.3",
         "module-alias": "^2.2.2",
         "prettier": "^2.2.1",
         "react": "^17.0.1",
@@ -46,11 +47,6 @@
         "hooks": {
             "pre-commit": "yarn precommit"
         }
-    },
-    "lint-staged": {
-        "*.{js,ts,tsx}": [
-            "./node_modules/.bin/eslint --fix"
-        ]
     },
     "dependencies": {
         "html-loader": "^1.3.2"

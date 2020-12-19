@@ -3,7 +3,8 @@
 /* */
 {
     "include": [
-        "src/**/*" // *** The files TypeScript should type check ***
+        "src/**/*.ts",
+        "src/**/*.tsx" // *** The files TypeScript should type check ***
     ],
     "exclude": ["node_modules", "build"] /** The files to not type check */,
     "compilerOptions": {

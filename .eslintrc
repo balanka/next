@@ -11,7 +11,6 @@
         "node": true
     },
     "extends": [
-        "airbnb-base",
         "plugin:import/typescript",
         "plugin:@typescript-eslint/recommended",
         "plugin:@typescript-eslint/recommended-requiring-type-checking",
@@ -29,18 +28,7 @@
         "@typescript-eslint/no-use-before-define": "warn",
         "@typescript-eslint/no-explicit-any": "error",
         "@typescript-eslint/no-inferrable-types": "warn",
-        "import/prefer-default-export": "off",
-        "import/no-cycle": "error",
-        "import/extensions": [
-            "error",
-            "ignorePackages",
-            {
-                "js": "never",
-                "jsx": "never",
-                "ts": "never",
-                "tsx": "never"
-            }
-        ]
+        "import/prefer-default-export": "off"
     },
     "settings": {
         // Allows us to lint absolute imports within codebase

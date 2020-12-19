@@ -1,6 +1,6 @@
 import React, { ReactElement } from "react";
 import ReactDOM from "react-dom";
-import Test from "../components/Test";
+import Test from "../../src/components/Test";
 
 function App(): ReactElement {
     return (
