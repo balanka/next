@@ -7,9 +7,10 @@
     "license": "MIT",
     "private": false,
     "scripts": {
+        "build": "./node_modules/.bin/esbuild ./src/index.ts --bundle --minify --sourcemap --platform=node --outfile=build/material-table-core.next.js",
         "precommit": "./node_modules/.bin/eslint --fix && yarn prettier",
-        "serve:app": "./node_modules/.bin/webpack serve --config test/app/webpack.config.js --progress",
-        "prettier": "./node_modules/.bin/prettier --write ./src"
+        "prettier": "./node_modules/.bin/prettier --write ./src",
+        "serve:app": "./node_modules/.bin/webpack serve --config test/app/webpack.config.js --progress"
     },
     "devDependencies": {
         "@babel/core": "^7.12.10",
