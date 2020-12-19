@@ -6,6 +6,7 @@
     "author": "material-table-core contributors",
     "license": "MIT",
     "private": false,
+    "main": "src/index.ts",
     "scripts": {
         "build": "./node_modules/.bin/esbuild ./src/index.ts --bundle --minify --sourcemap --platform=node --outfile=build/material-table-core.next.js",
         "precommit": "./node_modules/.bin/eslint --fix && yarn prettier",
