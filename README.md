@@ -6,7 +6,7 @@ The next version of material-table-core
 
 -   `yarn build`
     -   Bundles code using [`esbuild`](https://github.com/evanw/esbuild)
-    -   Entry `src/index.ts`
+    -   Entry `src/index.ts` (edit this file to test code)
     -   Bundle output `bundle/material-table-core.next.js`
 -   `yarn serve:app`
     -   Source can be found at `test/app/*`
