@@ -14,7 +14,7 @@ import * as CommonValues from './utils/common-values';
 import { Column } from './props/globalProps';
 import { IRenderState } from './props/dataManager';
 
-export class Table<T extends Row> extends React.Component<
+export class Table<T extends Row<T>> extends React.Component<
   ITableProps<T>,
   ITableState<T> & IRenderState<T>
 > {

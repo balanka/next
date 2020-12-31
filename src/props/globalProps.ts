@@ -5,7 +5,7 @@ import { Row } from './tableProps';
 
 type SvgIconComponent = typeof SvgIcon;
 
-export interface MaterialTableProps<RowData extends object> {
+export interface MaterialTableProps<RowData extends Row<RowData>> {
   actions?: (Action<RowData> | ((rowData: RowData) => Action<RowData>))[];
   cellEditable?: {
     cellStyle?: React.CSSProperties;
@@ -72,7 +72,7 @@ export interface MaterialTableProps<RowData extends object> {
   totalCount?: number;
 }
 
-export interface Filter<RowData extends object> {
+export interface Filter<RowData extends Row<RowData>> {
   column: Column<RowData>;
   operator: '=';
   value: any;
@@ -82,7 +82,7 @@ export interface ErrorState {
   errorCause: 'query' | 'add' | 'update' | 'delete';
 }
 
-export interface Query<RowData extends object> {
+export interface Query<RowData extends Row<RowData>> {
   filters: Filter<RowData>[];
   page: number;
   pageSize: number;
@@ -93,13 +93,13 @@ export interface Query<RowData extends object> {
   error?: ErrorState;
 }
 
-export interface QueryResult<RowData extends object> {
+export interface QueryResult<RowData extends Row<RowData>> {
   data: RowData[];
   page: number;
   totalCount: number;
 }
 
-export interface DetailPanel<RowData extends object> {
+export interface DetailPanel<RowData extends Row<RowData>> {
   disabled?: boolean;
   icon?: string | React.ComponentType<any>;
   openIcon?: string | React.ComponentType<any>;
@@ -107,7 +107,7 @@ export interface DetailPanel<RowData extends object> {
   render: (rowData: RowData) => string | React.ReactNode;
 }
 
-export interface Action<RowData extends object> {
+export interface Action<RowData extends Row<RowData>> {
   disabled?: boolean;
   icon: string | (() => React.ReactElement<any>) | SvgIconComponent;
   isFreeAction?: boolean;
@@ -118,7 +118,7 @@ export interface Action<RowData extends object> {
   hidden?: boolean;
 }
 
-export interface EditComponentProps<RowData extends object> {
+export interface EditComponentProps<RowData extends Row<RowData>> {
   rowData: RowData;
   value: any;
   onChange: (newValue: any) => void;
@@ -140,10 +140,10 @@ export interface EditCellColumnDef {
   };
 }
 
-export type InternalColumn<RowData extends Row> = Column<RowData> &
-  Row & { columnDef: Row; lookup: any };
+export type InternalColumn<RowData extends Row<RowData>> = Column<RowData> &
+  Row<RowData> & { columnDef: Row<RowData>; lookup: any };
 
-export interface Column<RowData extends object> {
+export interface Column<RowData extends Row<RowData>> {
   align?: 'center' | 'inherit' | 'justify' | 'left' | 'right';
   cellStyle?:
     | React.CSSProperties
@@ -163,7 +163,8 @@ export interface Column<RowData extends object> {
   customSort?: (
     data1: RowData,
     data2: RowData,
-    type: 'row' | 'group'
+    type: 'row' | 'group',
+    direction?: 'asc' | 'desc'
   ) => number;
   defaultFilter?: any;
   defaultGroupOrder?: number;
@@ -211,16 +212,19 @@ export interface Column<RowData extends object> {
   sorting?: boolean;
   title?: string | React.ReactElement<any>;
   tooltip?: string;
-  type?:
-    | 'string'
-    | 'boolean'
-    | 'numeric'
-    | 'date'
-    | 'datetime'
-    | 'time'
-    | 'currency';
+  type?: ColumDefType;
+
   width?: string | number;
 }
+
+export type ColumDefType =
+  | 'string'
+  | 'boolean'
+  | 'numeric'
+  | 'date'
+  | 'datetime'
+  | 'time'
+  | 'currency';
 
 export interface Components {
   Action?: React.ComponentType<any>;
@@ -295,7 +299,7 @@ export interface Icons {
   Retry?: React.ForwardRefExoticComponent<React.RefAttributes<SVGSVGElement>>;
 }
 
-export interface Options<RowData extends object> {
+export interface Options<RowData extends Row<RowData>> {
   actionsCellStyle?: React.CSSProperties;
   detailPanelColumnStyle?: React.CSSProperties;
   editCellStyle?: React.CSSProperties;
@@ -303,7 +307,7 @@ export interface Options<RowData extends object> {
   addRowPosition?: 'first' | 'last';
   columnsButton?: boolean;
   columnResizable?: boolean;
-  defaultExpanded?: boolean | ((rowData: any) => boolean);
+  defaultExpanded?: boolean | ((rowData: RowData) => boolean);
   debounceInterval?: number;
   detailPanelType?: 'single' | 'multiple';
   doubleHorizontalScroll?: boolean;

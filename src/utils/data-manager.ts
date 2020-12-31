@@ -2,17 +2,17 @@ import formatDate from 'date-fns/format';
 import { DropResult } from 'react-beautiful-dnd';
 import { byString } from '.';
 import { IRenderState } from '../props/dataManager';
-import type { Column, InternalColumn } from '../props/globalProps';
+import type { ColumDefType, Column, InternalColumn } from '../props/globalProps';
 import type { Row } from '../props/tableProps';
 
-export default class DataManager<T extends Row> {
+export default class DataManager<T extends Row<T>> {
   applyFilters = false;
   applySearch = false;
   applySort = false;
   currentPage = 0;
   detailPanelType = 'multiple';
-  lastDetailPanelRow: Row | undefined  = undefined;
-  lastEditingRow: Row | undefined = undefined;
+  lastDetailPanelRow: T | undefined  = undefined;
+  lastEditingRow: T | undefined = undefined;
   orderBy = -1;
   orderDirection = '';
   pageSize = 5;
@@ -23,7 +23,7 @@ export default class DataManager<T extends Row> {
   treefiedDataLength = 0;
   treeDataMaxLevel = 0;
   groupedDataLength = 0;
-  defaultExpanded = false;
+  defaultExpanded: ((rowData: T) => boolean) | boolean | undefined = false;
   bulkEditOpen = false;
   bulkEditChangedRows: Record<string, { oldData: T; newData: T; }> = {};
 
@@ -33,7 +33,7 @@ export default class DataManager<T extends Row> {
   filteredData: T[] = [];
   searchedData: T[] = [];
   groupedData: T[] = [];
-  treefiedData: T[] = [];
+  treefiedData: T[] | T = [];
   sortedData: T[] = [];
   pagedData: T[] = [];
   renderData : T[]= [];
@@ -114,7 +114,7 @@ export default class DataManager<T extends Row> {
     });
   }
 
-  setDefaultExpanded(expanded: boolean) {
+  setDefaultExpanded(expanded?: boolean | ((rowData: T) => boolean)) {
     this.defaultExpanded = expanded;
   }
 
@@ -157,13 +157,15 @@ export default class DataManager<T extends Row> {
     this.filtered = false;
   }
 
-  changeRowSelected(checked: boolean, path: string) {
+  changeRowSelected(checked: boolean, path: number[]) {
     const rowData = this.findDataByPath(this.sortedData, path);
-    rowData.tableData.checked = checked;
+    if(rowData && "tableData" in rowData) {
+      rowData.tableData.checked = checked;
+    }
     this.selectedCount = this.selectedCount + (checked ? 1 : -1);
 
-    const checkChildRows = (rowData: T) => {
-      if (rowData.tableData.childRows) {
+    const checkChildRows = (rowData?: T) => {
+      if (rowData && rowData.tableData.childRows) {
         rowData.tableData.childRows.forEach(childRow => {
           if (childRow.tableData.checked !== checked) {
             childRow.tableData.checked = checked;
@@ -179,14 +181,14 @@ export default class DataManager<T extends Row> {
     this.filtered = false;
   }
 
-  changeDetailPanelVisibility(path: string, render: number) {
+  changeDetailPanelVisibility(path: number[], render: number) {
     const rowData = this.findDataByPath(this.sortedData, path);
 
-    if (
-      (rowData.tableData.showDetailPanel || '').toString() === render.toString()
+    if (rowData && 
+      (rowData.tableData?.showDetailPanel || '').toString() === render.toString()
     ) {
       rowData.tableData.showDetailPanel = undefined;
-    } else {
+    } else if(rowData){
       rowData.tableData.showDetailPanel = render;
     }
 
@@ -201,9 +203,11 @@ export default class DataManager<T extends Row> {
     this.lastDetailPanelRow = rowData;
   }
 
-  changeGroupExpand(path: string) {
+  changeGroupExpand(path: number[]) {
     const rowData = this.findDataByPath(this.sortedData, path);
-    rowData.isExpanded = !rowData.isExpanded;
+    if(rowData) {
+      rowData.isExpanded = !rowData.isExpanded;
+    }
   }
 
   changeSearchText(searchText: string) {
@@ -212,7 +216,7 @@ export default class DataManager<T extends Row> {
     this.currentPage = 0;
   }
 
-  changeRowEditing(rowData?: Row, mode?: string) {
+  changeRowEditing(rowData?: T, mode?: string) {
     if (rowData) {
       rowData.tableData.editing = mode;
 
@@ -240,7 +244,7 @@ export default class DataManager<T extends Row> {
     if (this.isDataType('group')) {
       const setCheck = (data: T[]) => {
         data.forEach(element => {
-          if (element.groups.length > 0) {
+          if (element.groups && element.groups.length > 0) {
             setCheck(element.groups as T[]);
           } else {
             (element as {data: T[]}).data.forEach(d => {
@@ -288,9 +292,11 @@ export default class DataManager<T extends Row> {
     column.hiddenByColumnsButton = hidden;
   }
 
-  changeTreeExpand(path: string) {
+  changeTreeExpand(path: number[]) {
     const rowData = this.findDataByPath(this.sortedData, path);
-    rowData.tableData.isTreeExpanded = !rowData.tableData.isTreeExpanded;
+    if(rowData && "tableData" in rowData) {
+      rowData.tableData.isTreeExpanded = !(rowData.tableData.isTreeExpanded ?? false);
+    }
   }
 
   changeDetailPanelType(type: string) {
@@ -478,9 +484,9 @@ export default class DataManager<T extends Row> {
     });
   };
 
-  findDataByPath = (renderData: T, path: string[]) => {
+  findDataByPath = (renderData: T[], path: number[]): T |undefined=> {
     if (this.isDataType('tree')) {
-      const node = path.reduce(
+      const node = path.reduce<any>(
         (result, current) => {
           return (
             result &&
@@ -489,18 +495,19 @@ export default class DataManager<T extends Row> {
             result.tableData.childRows[current]
           );
         },
-        { tableData: { childRows: renderData } }
+        { tableData: { childRows: renderData} }
       );
 
-      return node;
+      return node as T;
     } else {
-      const data = { groups: renderData };
+      const data = { groups: renderData, tableData: {id: -1}, data: {} } as any as T;
 
-      const node = path.reduce((result, current) => {
-        if (result.groups.length > 0) {
-          return result.groups[current];
+      const node = path.reduce<T | undefined>((result, current) => {
+        if(!result) return undefined;
+        if ((result.groups?.length ?? 0) > 0) {
+          return result.groups?.[current];
         } else if (result.data) {
-          return result.data[current];
+          return (result.data as T[])[current] ;
         } else {
           return undefined;
         }
@@ -509,16 +516,16 @@ export default class DataManager<T extends Row> {
     }
   };
 
-  findGroupByGroupPath(renderData: T, path: string[]) {
-    const data = { groups: renderData, groupsIndex: this.rootGroupsIndex };
+  findGroupByGroupPath(renderData: T[], path: number[]) {
+    const data = { groups: renderData, groupsIndex: this.rootGroupsIndex } as any as T;
 
-    const node = path.reduce((result, current) => {
+    const node = path.reduce<T | undefined>((result, current) => {
       if (!result) {
         return undefined;
       }
 
-      if (result.groupsIndex[current] !== undefined) {
-        return result.groups[result.groupsIndex[current]];
+      if (result.groupsIndex?.[current] !== undefined) {
+        return result.groups?.[result.groupsIndex[current]];
       }
       return undefined;
       // const group = result.groups.find(a => a.value === current);
@@ -532,7 +539,7 @@ export default class DataManager<T extends Row> {
       columnDef.field !== undefined && 
       typeof rowData[columnDef.field] !== 'undefined'
         ? rowData[columnDef.field]
-        : byString(rowData, columnDef.field);
+        : byString(rowData, String(columnDef.field));
     if (columnDef.lookup && lookup) {
       value = columnDef.lookup[value];
     }
@@ -540,19 +547,19 @@ export default class DataManager<T extends Row> {
     return value;
   };
 
-  isDataType(type) {
+  isDataType(type: 'normal' | 'tree' | 'group') {
     let dataType = 'normal';
 
     if (this.parentFunc) {
       dataType = 'tree';
-    } else if (this.columns.find(a => a.tableData.groupOrder > -1)) {
+    } else if (this.columns.find(a => (a.tableData?.groupOrder ?? -1)> -1)) {
       dataType = 'group';
     }
 
     return type === dataType;
   }
-
-  sort(a, b, type) {
+  
+  sort(a: any, b:any, type?: ColumDefType): number {
     if (type === 'numeric') {
       return a - b;
     } else {
@@ -565,30 +572,30 @@ export default class DataManager<T extends Row> {
     }
   }
 
-  sortList(list) {
+  sortList(list: T[]) {
     const columnDef = this.columns.find(_ => _.tableData.id === this.orderBy);
     let result = list;
 
-    if (columnDef.customSort) {
+    if (columnDef && columnDef.customSort) {
       if (this.orderDirection === 'desc') {
-        result = list.sort((a, b) => columnDef.customSort(b, a, 'row', 'desc'));
+        result = list.sort((a, b) => columnDef.customSort!(b, a, 'row', 'desc'));
       } else {
-        result = list.sort((a, b) => columnDef.customSort(a, b, 'row'));
+        result = list.sort((a, b) => columnDef.customSort!(a, b, 'row'));
       }
     } else {
       result = list.sort(
         this.orderDirection === 'desc'
           ? (a, b) =>
               this.sort(
-                this.getFieldValue(b, columnDef),
-                this.getFieldValue(a, columnDef),
-                columnDef.type
+                this.getFieldValue(b, columnDef!),
+                this.getFieldValue(a, columnDef!),
+                columnDef!.type
               )
           : (a, b) =>
               this.sort(
-                this.getFieldValue(a, columnDef),
-                this.getFieldValue(b, columnDef),
-                columnDef.type
+                this.getFieldValue(a, columnDef!),
+                this.getFieldValue(b, columnDef!),
+                columnDef!.type
               )
       );
     }
@@ -652,11 +659,11 @@ export default class DataManager<T extends Row> {
       this.columns
         .filter(columnDef => columnDef.tableData.filterValue)
         .forEach(columnDef => {
-          const { lookup, type, tableData } = columnDef;
+          const { lookup, type = "", tableData } = columnDef;
           if (columnDef.customFilterAndSearch) {
             this.filteredData = this.filteredData.filter(
               row =>
-                !!columnDef.customFilterAndSearch(
+                !!columnDef.customFilterAndSearch!(
                   tableData.filterValue,
                   row,
                   columnDef
@@ -670,7 +677,7 @@ export default class DataManager<T extends Row> {
                   !tableData.filterValue ||
                   tableData.filterValue.length === 0 ||
                   tableData.filterValue.indexOf(
-                    value !== undefined && value !== null && value.toString()
+                    value !== undefined && value !== null && (value as any).toString()
                   ) > -1
                 );
               });
@@ -691,10 +698,10 @@ export default class DataManager<T extends Row> {
               this.filteredData = this.filteredData.filter(row => {
                 const value = this.getFieldValue(row, columnDef);
 
-                const currentDate = value ? new Date(value) : null;
+                const currentDate = value ? new Date(value as number) : null;
 
                 if (currentDate && currentDate.toString() !== 'Invalid Date') {
-                  const selectedDate = tableData.filterValue;
+                  const selectedDate = tableData.filterValue as any as Date;
                   let currentDateToCompare = '';
                   let selectedDateToCompare = '';
 
@@ -729,7 +736,7 @@ export default class DataManager<T extends Row> {
                 const currentHour = value || null;
 
                 if (currentHour) {
-                  const selectedHour = tableData.filterValue;
+                  const selectedHour = tableData.filterValue  as any as Date;
                   const currentHourToCompare = formatDate(
                     selectedHour,
                     'HH:mm'
@@ -745,10 +752,10 @@ export default class DataManager<T extends Row> {
                 const value = this.getFieldValue(row, columnDef);
                 return (
                   value &&
-                  value
+                  (value as any)
                     .toString()
                     .toUpperCase()
-                    .includes(tableData.filterValue.toUpperCase())
+                    .includes((tableData.filterValue ?? "").toUpperCase())
                 );
               });
             }
@@ -783,7 +790,7 @@ export default class DataManager<T extends Row> {
             } else if (columnDef.field) {
               const value = this.getFieldValue(row, columnDef);
               if (value) {
-                return value
+                return (value as any)
                   .toString()
                   .toUpperCase()
                   .includes(trimmedSearchText.toUpperCase());
@@ -802,19 +809,26 @@ export default class DataManager<T extends Row> {
     const tmpData = [...this.searchedData];
 
     const groups = this.columns
-      .filter(col => col.tableData.groupOrder > -1)
+      .filter(col => (col.tableData.groupOrder ?? -1) > -1)
       .sort(
-        (col1, col2) => col1.tableData.groupOrder - col2.tableData.groupOrder
+        (col1, col2) => (col1.tableData.groupOrder ?? -1) - (col2.tableData.groupOrder??-1)
       );
 
-    const subData = tmpData.reduce(
+    const subData = tmpData.reduce<T>(
       (result, currentRow) => {
         let object = result;
-        object = groups.reduce((o, colDef) => {
+        object = groups.reduce<T>((o, colDef) => {
           const value =
-            currentRow[colDef.field] || byString(currentRow, colDef.field);
+            (currentRow[colDef.field as keyof T] || byString(currentRow, colDef.field as string)) as string
 
-          let group;
+          let group: T | undefined;
+          
+          if(!o.groups) {
+            o.groups = [];
+          }
+          if(!o.groupsIndex) {
+            o.groupsIndex = {};
+          }
           if (o.groupsIndex[value] !== undefined) {
             group = o.groups[o.groupsIndex[value]];
           }
@@ -838,7 +852,8 @@ export default class DataManager<T extends Row> {
               data: [],
               isExpanded: oldGroup.isExpanded,
               path: path,
-            };
+            } as any as T;
+            
             o.groups.push(group);
             o.groupsIndex[value] = o.groups.length - 1;
           }
@@ -850,17 +865,17 @@ export default class DataManager<T extends Row> {
 
         return result;
       },
-      { groups: [], groupsIndex: {} }
+      { groups: [], groupsIndex: {} } as any as T
     );
 
-    this.groupedData = subData.groups;
+    this.groupedData = subData.groups ?? [];
     this.grouped = true;
-    this.rootGroupsIndex = subData.groupsIndex;
+    this.rootGroupsIndex = subData.groupsIndex ?? [];
   }
 
   treefyData() {
     this.sorted = this.paged = false;
-    this.data.forEach(a => (a.tableData.childRows = null));
+    this.data.forEach(a => (a.tableData.childRows = undefined));
     this.treefiedData = [];
     this.treefiedDataLength = 0;
     this.treeDataMaxLevel = 0;
@@ -878,7 +893,7 @@ export default class DataManager<T extends Row> {
       this.expandTreeForNodes(this.searchedData);
     }
 
-    const addRow = rowData => {
+    const addRow = (rowData:T) => {
       rowData.tableData.markedForTreeRemove = false;
       const parent = this.parentFunc(rowData, this.data);
       if (parent) {
@@ -911,18 +926,18 @@ export default class DataManager<T extends Row> {
     this.data.forEach(rowData => {
       addRow(rowData);
     });
-    const markForTreeRemove = rowData => {
+    const markForTreeRemove = (rowData: T) => {
       let pointer = this.treefiedData;
-      rowData.tableData.path.forEach(pathPart => {
-        if (pointer.tableData && pointer.tableData.childRows) {
+      rowData.tableData.path?.forEach(pathPart => {
+        if (!Array.isArray(pointer) && pointer.tableData && pointer.tableData.childRows) {
           pointer = pointer.tableData.childRows;
         }
-        pointer = pointer[pathPart];
+        pointer = (pointer as T[])[pathPart];
       });
-      pointer.tableData.markedForTreeRemove = true;
+      (pointer as T).tableData.markedForTreeRemove = true;
     };
 
-    const traverseChildrenAndUnmark = rowData => {
+    const traverseChildrenAndUnmark = (rowData: T) => {
       if (rowData.tableData.childRows) {
         rowData.tableData.childRows.forEach(row => {
           traverseChildrenAndUnmark(row);
@@ -939,9 +954,9 @@ export default class DataManager<T extends Row> {
       ) {
         if (rowData.tableData.isTreeExpanded === undefined) {
           const isExpanded =
-            typeof this.defaultExpanded === 'boolean'
+            typeof this.defaultExpanded === 'boolean' 
               ? this.defaultExpanded
-              : this.defaultExpanded(rowData);
+              : this.defaultExpanded && this.defaultExpanded(rowData);
           rowData.tableData.isTreeExpanded = isExpanded;
         }
       }
@@ -959,7 +974,7 @@ export default class DataManager<T extends Row> {
       }
     });
 
-    const traverseTreeAndDeleteMarked = rowDataArray => {
+    const traverseTreeAndDeleteMarked = (rowDataArray: T[]) => {
       for (let i = rowDataArray.length - 1; i >= 0; i--) {
         const item = rowDataArray[i];
         if (item.tableData.childRows) {
@@ -980,17 +995,17 @@ export default class DataManager<T extends Row> {
       this.sortedData = [...this.groupedData];
 
       const groups = this.columns
-        .filter(col => col.tableData.groupOrder > -1)
+        .filter(col => (col.tableData.groupOrder ?? -1) > -1)
         .sort(
-          (col1, col2) => col1.tableData.groupOrder - col2.tableData.groupOrder
+          (col1, col2) => (col1.tableData.groupOrder ?? -1)  - (col2.tableData.groupOrder ?? -1) 
         );
 
-      const sortGroups = (list, columnDef) => {
+      const sortGroups = (list: T[], columnDef: InternalColumn<T>) => {
         if (columnDef.customSort) {
           return list.sort(
             columnDef.tableData.groupSort === 'desc'
-              ? (a, b) => columnDef.customSort(b.value, a.value, 'group')
-              : (a, b) => columnDef.customSort(a.value, b.value, 'group')
+              ? (a, b) => columnDef.customSort!(b.value, a.value, 'group')
+              : (a, b) => columnDef.customSort!(a.value, b.value, 'group')
           );
         } else {
           return list.sort(
@@ -1003,9 +1018,9 @@ export default class DataManager<T extends Row> {
 
       this.sortedData = sortGroups(this.sortedData, groups[0]);
 
-      const sortGroupData = (list, level) => {
+      const sortGroupData = (list: T[], level: number) => {
         list.forEach(element => {
-          if (element.groups.length > 0) {
+          if (element.groups && element.groups.length > 0) {
             const column = groups[level];
             element.groups = sortGroups(element.groups, column);
             sortGroupData(element.groups, level + 1);
@@ -1018,12 +1033,12 @@ export default class DataManager<T extends Row> {
       };
 
       sortGroupData(this.sortedData, 1);
-    } else if (this.isDataType('tree')) {
+    } else if (this.isDataType('tree') && Array.isArray(this.treefiedData)) {
       this.sortedData = [...this.treefiedData];
       if (this.orderBy != -1) {
         this.sortedData = this.sortList(this.sortedData);
 
-        const sortTree = list => {
+        const sortTree = (list: T[]) => {
           list.forEach(item => {
             if (item.tableData.childRows) {
               item.tableData.childRows = this.sortList(

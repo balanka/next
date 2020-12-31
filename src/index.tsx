@@ -1,6 +1,7 @@
 import { withStyles } from '@material-ui/core';
 import * as React from 'react';
 import { MaterialTableProps } from './props/globalProps';
+import { Row } from './props/tableProps';
 import { Table } from './Table';
 
 export { MaterialTable as MTable };
@@ -21,7 +22,7 @@ const styles = () => ({
   },
 });
 
-function MaterialTable<T extends object>(props: MaterialTableProps<T>) {
+function MaterialTable<T extends Row<T>>(props: MaterialTableProps<T>) {
   return <Table {...props} ref={props.tableRef} />;
 }
 

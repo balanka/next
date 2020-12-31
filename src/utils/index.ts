@@ -1,4 +1,4 @@
-export function byString<T extends object>(o: T, s: string) {
+export function byString<T extends object>(o: T, s?: string) {
   if (!s) {
     return;
   }
