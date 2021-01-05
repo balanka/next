@@ -141,13 +141,13 @@ export interface EditCellColumnDef {
 }
 
 export type InternalColumn<RowData extends Row<RowData>> = Column<RowData> &
-  Row<RowData> & { columnDef: Row<RowData>; lookup: any };
+  Row<RowData> & { columnDef: Row<RowData>; lookup: any; tableData: RowData };
 
 export interface Column<RowData extends Row<RowData>> {
   align?: 'center' | 'inherit' | 'justify' | 'left' | 'right';
   cellStyle?:
     | React.CSSProperties
-    | ((data: RowData[], rowData: RowData) => React.CSSProperties);
+    | ((data: RowData[] | unknown, rowData: RowData) => React.CSSProperties);
   currencySetting?: {
     locale?: string;
     currencyCode?: string;
@@ -177,7 +177,7 @@ export interface Column<RowData extends Row<RowData>> {
   emptyValue?:
     | string
     | React.ReactElement<any>
-    | ((data: any) => React.ReactElement<any> | string);
+    | ((data: RowData) => React.ReactElement<any> | string);
   export?: boolean;
   field?: keyof RowData | string;
   filtering?: boolean;
@@ -207,7 +207,7 @@ export interface Column<RowData extends Row<RowData>> {
   validate?: (
     rowData: RowData
   ) => { isValid: boolean; helperText?: string } | string | boolean;
-  render?: (data: RowData, type: 'row' | 'group') => any;
+  render?: (data: RowData | unknown, type: 'row' | 'group') => any;
   searchable?: boolean;
   sorting?: boolean;
   title?: string | React.ReactElement<any>;
@@ -260,44 +260,34 @@ export const MTablePagination: (props: any) => React.ReactElement<any>;
 export const MTableToolbar: (props: any) => React.ReactElement<any>;
 export const MTable: (props: any) => React.ReactElement<any>;
 
-export interface Icons {
-  Add?: React.ForwardRefExoticComponent<React.RefAttributes<SVGSVGElement>>;
-  Check?: React.ForwardRefExoticComponent<React.RefAttributes<SVGSVGElement>>;
-  Clear?: React.ForwardRefExoticComponent<React.RefAttributes<SVGSVGElement>>;
-  Delete?: React.ForwardRefExoticComponent<React.RefAttributes<SVGSVGElement>>;
-  DetailPanel?: React.ForwardRefExoticComponent<
-    React.RefAttributes<SVGSVGElement>
-  >;
-  Edit?: React.ForwardRefExoticComponent<React.RefAttributes<SVGSVGElement>>;
-  Export?: React.ForwardRefExoticComponent<React.RefAttributes<SVGSVGElement>>;
-  Filter?: React.ForwardRefExoticComponent<React.RefAttributes<SVGSVGElement>>;
-  FirstPage?: React.ForwardRefExoticComponent<
-    React.RefAttributes<SVGSVGElement>
-  >;
-  SortArrow?: React.ForwardRefExoticComponent<
-    React.RefAttributes<SVGSVGElement>
-  >;
-  LastPage?: React.ForwardRefExoticComponent<
-    React.RefAttributes<SVGSVGElement>
-  >;
-  NextPage?: React.ForwardRefExoticComponent<
-    React.RefAttributes<SVGSVGElement>
-  >;
-  PreviousPage?: React.ForwardRefExoticComponent<
-    React.RefAttributes<SVGSVGElement>
-  >;
-  ResetSearch?: React.ForwardRefExoticComponent<
-    React.RefAttributes<SVGSVGElement>
-  >;
-  Search?: React.ForwardRefExoticComponent<React.RefAttributes<SVGSVGElement>>;
-  ThirdStateCheck?: React.ForwardRefExoticComponent<
-    React.RefAttributes<SVGSVGElement>
-  >;
-  ViewColumn?: React.ForwardRefExoticComponent<
-    React.RefAttributes<SVGSVGElement>
-  >;
-  Retry?: React.ForwardRefExoticComponent<React.RefAttributes<SVGSVGElement>>;
+type SVGIcon = React.ForwardRefExoticComponent<
+  React.RefAttributes<SVGSVGElement> & {
+    style: React.CSSProperties;
+  }
+>;
+
+export interface InternalIcons {
+  Add: SVGIcon;
+  Check: SVGIcon;
+  Clear: SVGIcon;
+  Delete: SVGIcon;
+  DetailPanel: SVGIcon;
+  Edit: SVGIcon;
+  Export: SVGIcon;
+  Filter: SVGIcon;
+  FirstPage: SVGIcon;
+  SortArrow: SVGIcon;
+  LastPage: SVGIcon;
+  NextPage: SVGIcon;
+  PreviousPage: SVGIcon;
+  ResetSearch: SVGIcon;
+  Search: SVGIcon;
+  ThirdStateCheck: SVGIcon;
+  ViewColumn: SVGIcon;
+  Retry: SVGIcon;
 }
+
+export type Icons = Partial<InternalIcons>;
 
 export interface Options<RowData extends Row<RowData>> {
   actionsCellStyle?: React.CSSProperties;
