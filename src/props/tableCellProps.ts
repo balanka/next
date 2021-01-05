@@ -13,6 +13,7 @@ interface TableProps<T extends Row<T>> {
   scrollWidth?: number;
   size?: 'small' | 'medium';
   style?: React.CSSProperties;
+  children?: JSX.Element;
 }
 
 export { TableProps };
